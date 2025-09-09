@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Blowfish Encryption Tool</title>
+  <style>
+    :root{
+      --glass-bg: rgba(255,255,255,0.06);
+      --glass-border: rgba(255,255,255,0.18);
+      --accent: #66f0d8;
+      --accent-2: #7ae3ff;
+      --text: rgba(255,255,255,0.95);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body,#app{height:100%}
+    body{
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+                   "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background:#000;color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .bg{
+      position:fixed;inset:0;background-image:url('background.jpg');
+      background-size:cover;background-position:center;
+      z-index:-3;filter:brightness(0.45) saturate(0.9);
+      transition:transform 0.6s ease;
+    }
+    .overlay{
+      position:fixed;inset:0;z-index:-2;pointer-events:none;
+      background:linear-gradient(120deg, rgba(10,30,25,0.35), rgba(2,6,12,0.55));
+    }
+
+    .center{
+      min-height:100%;display:flex;align-items:center;justify-content:center;padding:48px;
+    }
+    .grid{display:grid;grid-template-columns:1fr;gap:28px;max-width:520px}
+
+    .card{
+      padding:28px 24px;border-radius:20px;
+      background:var(--glass-bg);
+      border:1px solid var(--glass-border);
+      box-shadow:0 8px 30px rgba(2,6,12,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      backdrop-filter: blur(12px) saturate(130%);
+      -webkit-backdrop-filter: blur(12px) saturate(130%);
+      transition:transform 300ms, box-shadow 300ms;
+      position:relative;overflow:hidden;
+    }
+    .card:hover{
+      transform:translateY(-10px) scale(1.01);
+      box-shadow:0 16px 50px rgba(2,6,12,0.7);
+    }
+
+    .title{
+      font-size:22px;font-weight:600;margin-bottom:6px;text-align:center;
+      letter-spacing:-0.2px;
+    }
+    .subtitle{
+      text-align:center;font-size:14px;
+      color:rgba(255,255,255,0.7);margin-bottom:20px;
+      letter-spacing:-0.1px;
+    }
+
+    label{display:block;margin-top:14px;font-size:13px;font-weight:500}
+    input,textarea{
+      width:100%;padding:10px 12px;margin-top:6px;
+      border:1px solid rgba(255,255,255,0.15);
+      border-radius:12px;
+      background:rgba(255,255,255,0.04);color:var(--text);
+      font-size:14px;resize:none;
+      transition: all 0.25s ease;
+    }
+    textarea{min-height:80px}
+
+    /* Hover + focus glass effect */
+    input:hover, textarea:hover,
+    input:focus, textarea:focus {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 12px rgba(102,240,216,0.35);
+      outline: none;
+      transform: translateY(-2px);
+    }
+
+    .buttons{display:flex;justify-content:space-between;margin:20px 0}
+    button{
+      width:48%;padding:10px;border:none;border-radius:12px;
+      font-weight:600;cursor:pointer;font-size:14px;
+      background:linear-gradient(90deg,var(--accent),var(--accent-2));
+      color:#002;transition:transform 0.2s;
+    }
+    button:hover{transform:scale(1.02)}
+    button:active{transform:translateY(1px)}
+
+    @media(max-width:600px){
+      .center{padding:24px}
+    }
+  </style>
+</head>
+<body>
+  <div class="bg" id="bg"></div>
+  <div class="overlay"></div>
+
+  <main id="app">
+    <div class="center">
+      <div class="grid">
+        <div class="card">
+          <div class="title">Blowfish Encryption Tool</div>
+          
+
+          <label>Secret Key</label>
+          <input type="password" id="key" placeholder="Enter secret key">
+
+          <label>Input (Text for Encrypt / Hex for Decrypt)</label>
+          <textarea id="inputText" placeholder="Type your text..."></textarea>
+
+          <div class="buttons">
+            <button onclick="encryptText()">Encrypt</button>
+            <button onclick="decryptText()">Decrypt</button>
+          </div>
+
+          <label>Result</label>
+          <textarea id="result" readonly></textarea>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Blowfish library -->
+  <script src="https://cdn.jsdelivr.net/npm/egoroof-blowfish/dist/blowfish.min.js"></script>
+  <script>
+    function encryptText() {
+      try {
+        const key = document.getElementById("key").value;
+        const plaintext = document.getElementById("inputText").value;
+        if (!key || !plaintext) {
+          document.getElementById("result").value = "Key and Text are required.";
+          return;
+        }
+        const bf = new Blowfish(key, Blowfish.MODE.ECB, Blowfish.PADDING.PKCS5);
+        const encrypted = bf.encode(plaintext);
+        const hex = Array.from(encrypted).map(b => b.toString(16).padStart(2, "0")).join("");
+        document.getElementById("result").value = hex;
+      } catch (e) {
+        document.getElementById("result").value = "Error: " + e.message;
+      }
+    }
+
+    function decryptText() {
+      try {
+        const key = document.getElementById("key").value;
+        const hexInput = document.getElementById("inputText").value.trim();
+        if (!key || !hexInput) {
+          document.getElementById("result").value = "Key and Hex input are required.";
+          return;
+        }
+        const bf = new Blowfish(key, Blowfish.MODE.ECB, Blowfish.PADDING.PKCS5);
+        const bytes = new Uint8Array(hexInput.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+        const decrypted = bf.decode(bytes, Blowfish.TYPE.STRING);
+        document.getElementById("result").value = decrypted;
+      } catch (e) {
+        document.getElementById("result").value = "Error: " + e.message;
+      }
+    }
+
+    // Background parallax
+    const bg=document.getElementById('bg');let w=window.innerWidth,h=window.innerHeight;
+    function onMove(e){const x=(e.clientX-w/2)/(w/2);const y=(e.clientY-h/2)/(h/2);
+      bg.style.transform=`translate(${x*6}px,${y*6}px) scale(1.03)`;}
+    function onLeave(){bg.style.transform='';}
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseout',onLeave);
+    window.addEventListener('resize',()=>{w=window.innerWidth;h=window.innerHeight});
+    
+  // Simple hash for input mapping
+  function hashInput(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash.toString();
+  }
+
+  function saveKeyForInput(input, key) {
+    if (!input || !key) return;
+    const hashed = hashInput(input.trim());
+    localStorage.setItem("key_" + hashed, key);
+  }
+
+  function getKeyForInput(input) {
+    if (!input) return "";
+    const hashed = hashInput(input.trim());
+    return localStorage.getItem("key_" + hashed) || "";
+  }
+
+  // Auto-load key when typing input
+  document.getElementById("inputText").addEventListener("input", () => {
+    const input = document.getElementById("inputText").value;
+    const storedKey = getKeyForInput(input);
+    if (storedKey) {
+      document.getElementById("key").value = storedKey;
+    }
+  });
+
+  function encryptText() {
+    try {
+      const key = document.getElementById("key").value;
+      const plaintext = document.getElementById("inputText").value;
+      if (!key || !plaintext) {
+        document.getElementById("result").value = "Key and Text are required.";
+        return;
+      }
+      const bf = new Blowfish(key, Blowfish.MODE.ECB, Blowfish.PADDING.PKCS5);
+      const encrypted = bf.encode(plaintext);
+      const hex = Array.from(encrypted).map(b => b.toString(16).padStart(2, "0")).join("");
+      document.getElementById("result").value = hex;
+
+      // Save key for this input
+      saveKeyForInput(plaintext, key);
+    } catch (e) {
+      document.getElementById("result").value = "Error: " + e.message;
+    }
+  }
+
+  function decryptText() {
+    try {
+      const key = document.getElementById("key").value;
+      const hexInput = document.getElementById("inputText").value.trim();
+      if (!key || !hexInput) {
+        document.getElementById("result").value = "Key and Hex input are required.";
+        return;
+      }
+      const bf = new Blowfish(key, Blowfish.MODE.ECB, Blowfish.PADDING.PKCS5);
+      const bytes = new Uint8Array(hexInput.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+      const decrypted = bf.decode(bytes, Blowfish.TYPE.STRING);
+      document.getElementById("result").value = decrypted;
+
+      // Save key for decrypted plaintext
+      saveKeyForInput(decrypted, key);
+    } catch (e) {
+      document.getElementById("result").value = "Error: " + e.message;
+    }
+  }
+
+  
+  </script>
+</body>
+</html>
